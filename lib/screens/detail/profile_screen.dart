@@ -185,10 +185,7 @@ class ProfileScreen extends StatelessWidget {
                                 'Jl. Contoh No. 123, Jakarta',
                               ),
                               const SizedBox(height: 16),
-                              _buildProfileItem(
-                                'Tanggal Lahir',
-                                '01 Januari 1990',
-                              ),
+                              
                               const SizedBox(height: 16),
                               _buildProfileItem('Jenis Kelamin', 'Laki-laki'),
                               const SizedBox(height: 20),

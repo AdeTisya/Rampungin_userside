@@ -55,13 +55,13 @@ class _BangunanScreenState extends KategoriBangunanMasterState<BangunanScreen> {
 
   @override
   void showServiceDetail(Map<String, dynamic> item) {
-    // Method tidak digunakan, langsung redirect ke DetailOrder
+
     _navigateToDetailOrder(item);
   }
 
   @override
   void onItemPressed(BuildContext context, Map<String, dynamic> item) {
-    // Panggil showServiceDetail yang sudah diimplementasikan
+
     showServiceDetail(item);
   }
 

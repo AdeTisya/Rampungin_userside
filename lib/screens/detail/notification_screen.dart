@@ -13,11 +13,17 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // TODO: Data ini akan diambil dari database
+  List<Map<String, dynamic>> _notifications = [];
+  int _unreadCount = 0;
+
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
     _startAnimations();
+    // TODO: Panggil fungsi untuk fetch data dari database
+    _loadNotifications();
   }
 
   void _initializeAnimations() {
@@ -54,6 +60,116 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     _slideController.forward();
   }
 
+  // TODO: Ganti dengan fungsi yang mengambil data dari database
+  Future<void> _loadNotifications() async {
+    // Simulasi fetch dari database
+    // Ganti dengan: await DatabaseService.getNotifications();
+    
+    setState(() {
+      // Contoh data - akan diganti dengan data dari database
+      _notifications = [
+        // {
+        //   'notificationId': 'NOTIF001',
+        //   'orderId': 'ORD001',
+        //   'technicianName': 'Budi Santoso',
+        //   'technicianSpecialty': 'Tukang Bangunan',
+        //   'serviceType': 'Renovasi Rumah',
+        //   'estimatedTime': '2 jam',
+        //   'time': '5 menit yang lalu',
+        //   'isRead': false,
+        //   'technicianPhone': '+62 812 3456 7890',
+        // },
+      ];
+      
+      _unreadCount = _notifications.where((notif) => !notif['isRead']).length;
+    });
+  }
+
+  void _markAsRead(int index) {
+    setState(() {
+      _notifications[index]['isRead'] = true;
+      _unreadCount = _notifications.where((notif) => !notif['isRead']).length;
+    });
+    
+    // TODO: Update status di database
+    // await DatabaseService.markNotificationAsRead(_notifications[index]['notificationId']);
+  }
+
+  void _markAllAsRead() {
+    setState(() {
+      for (var notif in _notifications) {
+        notif['isRead'] = true;
+      }
+      _unreadCount = 0;
+    });
+    
+    // TODO: Update semua status di database
+    // await DatabaseService.markAllNotificationsAsRead();
+  }
+
+  void _viewOrderDetails(Map<String, dynamic> notification) {
+    // TODO: Navigate ke detail order atau chat dengan tukang
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.info_outline, color: Color(0xFFF3B950), size: 28),
+            SizedBox(width: 12),
+            Text('Detail Orderan'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Tukang: ${notification['technicianName']}',
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Spesialisasi: ${notification['technicianSpecialty']}',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Estimasi: ${notification['estimatedTime']}',
+              style: const TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'No. HP: ${notification['technicianPhone']}',
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Tutup'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(context);
+              // TODO: Navigate ke chat screen
+              // Navigator.pushNamed(context, '/ChatScreen', arguments: notification);
+            },
+            icon: const Icon(Icons.chat, size: 18),
+            label: const Text('Hubungi Tukang'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF3B950),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _fadeController.dispose();
@@ -61,29 +177,25 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     super.dispose();
   }
 
-  Widget _buildNotificationItem({
-    required IconData icon,
-    required String title,
-    required String message,
-    required String time,
-    required bool isRead,
-    Color? iconColor,
-    VoidCallback? onTap,
-  }) {
+  Widget _buildNotificationCard(Map<String, dynamic> notification, int index) {
+    bool isRead = notification['isRead'] ?? false;
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: isRead ? Colors.white : const Color(0xFFF4E4BC).withValues(alpha:0.3),
+        color: isRead ? Colors.white : const Color(0xFFFFF9E6),
         border: Border.all(
-          color: isRead ? Colors.grey.withValues(alpha:0.2) : const Color(0xFFF3B950).withValues(alpha:0.3),
-          width: 1,
+          color: isRead 
+            ? Colors.grey.withValues(alpha: 0.2) 
+            : const Color(0xFFF3B950).withValues(alpha: 0.5),
+          width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha:0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.08),
+            offset: const Offset(0, 4),
+            blurRadius: 12,
             spreadRadius: 1,
           ),
         ],
@@ -92,85 +204,179 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
+          onTap: () {
+            _markAsRead(index);
+            _viewOrderDetails(notification);
+          },
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+            padding: const EdgeInsets.all(18),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 45,
-                  height: 45,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: iconColor != null 
-                        ? [iconColor, iconColor.withValues(alpha:0.8)]
-                        : [const Color(0xFFF3B950), const Color(0xFFE8A63C)],
-                    ),
-                    borderRadius: BorderRadius.circular(22.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (iconColor ?? const Color(0xFFF3B950)).withValues(alpha:0.3),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    icon,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              title,
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
+                // Header
+                Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFF3B950), Color(0xFFE8A63C)],
+                        ),
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFF3B950).withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            spreadRadius: 1,
                           ),
-                          if (!isRead)
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF3B950),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        message,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      child: const Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.white,
+                        size: 26,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        time,
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w500,
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'Orderan Diterima',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (!isRead)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF3B950),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'BARU',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            notification['time'] ?? '',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Divider
+                Divider(color: Colors.grey.shade300, height: 1),
+                
+                const SizedBox(height: 16),
+                
+                // Notification Content
+                _buildDetailRow(
+                  Icons.person_outline,
+                  'Tukang',
+                  notification['technicianName'] ?? '',
+                ),
+                const SizedBox(height: 12),
+                
+                _buildDetailRow(
+                  Icons.build_outlined,
+                  'Spesialisasi',
+                  notification['technicianSpecialty'] ?? '',
+                ),
+                const SizedBox(height: 12),
+                
+                _buildDetailRow(
+                  Icons.handyman_outlined,
+                  'Layanan',
+                  notification['serviceType'] ?? '',
+                ),
+                const SizedBox(height: 12),
+                
+                _buildDetailRow(
+                  Icons.access_time_outlined,
+                  'Estimasi Kedatangan',
+                  notification['estimatedTime'] ?? '',
+                  valueColor: Colors.green.shade700,
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Message
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.green.shade200,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle,
+                        color: Colors.green.shade600,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          'Tukang akan segera menghubungi Anda untuk konfirmasi jadwal',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
                     ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Action Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _viewOrderDetails(notification),
+                    icon: const Icon(Icons.info_outline, size: 20),
+                    label: const Text('Lihat Detail'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF3B950),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
                   ),
                 ),
               ],
@@ -181,12 +387,80 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
     );
   }
 
-  Widget _buildAnimatedNotification(Widget child, double delay) {
-    return SlideTransition(
-      position: _slideAnimation,
-      child: FadeTransition(
-        opacity: _fadeAnimation,
-        child: child,
+  Widget _buildDetailRow(IconData icon, String label, String value, {Color? valueColor}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          icon,
+          size: 20,
+          color: Colors.grey.shade600,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor ?? Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF3B950).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.notifications_off_outlined,
+              size: 60,
+              color: Color(0xFFF3B950),
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text(
+            'Belum Ada Notifikasi',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Notifikasi orderan akan muncul di sini',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -236,11 +510,11 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha:0.2),
+                                color: Colors.white.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Icon(
-                                Icons.arrow_back_ios,
+                                Icons.arrow_back_ios_new,
                                 color: Colors.white,
                                 size: 20,
                               ),
@@ -248,7 +522,7 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                           ),
                           const Expanded(
                             child: Text(
-                              'Notification',
+                              'Notifikasi',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
@@ -257,52 +531,58 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
                               textAlign: TextAlign.center,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              // Mark all as read functionality
-                              setState(() {
-                                // Update all notifications to read
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha:0.2),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Text(
-                                'Mark All Read',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
+                          if (_unreadCount > 0)
+                            GestureDetector(
+                              onTap: _markAllAsRead,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'Tandai Dibaca',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
+                            )
+                          else
+                            const SizedBox(width: 40),
                         ],
                       ),
                       const SizedBox(height: 20),
                       
                       // Notification summary
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha:0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(15),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.notifications_active,
                               color: Colors.white,
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              '3 pesan belum terbaca',
-                              style: TextStyle(
+                              _unreadCount > 0
+                                  ? '$_unreadCount notifikasi baru'
+                                  : 'Tidak ada notifikasi baru',
+                              style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -320,216 +600,28 @@ class _NotificationScreenState extends State<NotificationScreen> with TickerProv
 
           // Notifications List
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-
-                  // Today Section
-                  _buildAnimatedNotification(
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha:0.1),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'Hari Ini',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF8B4513),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        
-                        _buildNotificationItem(
-                          icon: Icons.work,
-                          title: 'Order Baru Tersedia',
-                          message: 'Ada pekerjaan tukang listrik di daerah Yogyakarta. Segera ambil sebelum terlambat!',
-                          time: '5 menit yang lalu',
-                          isRead: false,
-                          iconColor: Colors.green,
-                          onTap: () {
-                            // Navigate to order detail
+            child: _notifications.isEmpty
+                ? _buildEmptyState()
+                : RefreshIndicator(
+                    onRefresh: _loadNotifications,
+                    color: const Color(0xFFF3B950),
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(20),
+                          itemCount: _notifications.length,
+                          itemBuilder: (context, index) {
+                            return _buildNotificationCard(
+                              _notifications[index],
+                              index,
+                            );
                           },
                         ),
-
-                        _buildNotificationItem(
-                          icon: Icons.payment,
-                          title: 'Pembayaran Diterima',
-                          message: 'Pembayaran sebesar Rp 150.000 telah diterima untuk pekerjaan kemarin.',
-                          time: '1 jam yang lalu',
-                          isRead: false,
-                          iconColor: Colors.blue,
-                          onTap: () {
-                            // Navigate to payment detail
-                          },
-                        ),
-
-                        _buildNotificationItem(
-                          icon: Icons.star,
-                          title: 'Review Baru',
-                          message: 'Anda mendapat review 5 bintang dari pelanggan. Pertahankan kualitas kerja!',
-                          time: '3 jam yang lalu',
-                          isRead: false,
-                          iconColor: Colors.orange,
-                          onTap: () {
-                            // Navigate to reviews
-                          },
-                        ),
-                      ],
+                      ),
                     ),
-                    0.2,
                   ),
-
-                  const SizedBox(height: 30),
-
-                  // Yesterday Section
-                  _buildAnimatedNotification(
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha:0.1),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'Kemarin',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF8B4513),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        _buildNotificationItem(
-                          icon: Icons.check_circle,
-                          title: 'Pekerjaan Selesai',
-                          message: 'Pekerjaan tukang kayu di Jl. Malioboro telah selesai dan mendapat konfirmasi.',
-                          time: 'Kemarin, 18:30',
-                          isRead: true,
-                          iconColor: Colors.green.shade600,
-                          onTap: () {
-                            // Navigate to completed job
-                          },
-                        ),
-
-                        _buildNotificationItem(
-                          icon: Icons.message,
-                          title: 'Pesan Baru',
-                          message: 'Pelanggan mengirim pesan tentang detail pekerjaan yang akan datang.',
-                          time: 'Kemarin, 14:20',
-                          isRead: true,
-                          iconColor: Colors.purple,
-                          onTap: () {
-                            // Navigate to chat
-                          },
-                        ),
-
-                        _buildNotificationItem(
-                          icon: Icons.schedule,
-                          title: 'Pengingat Jadwal',
-                          message: 'Jangan lupa! Anda memiliki janji kerja besok pagi pukul 08:00.',
-                          time: 'Kemarin, 10:15',
-                          isRead: true,
-                          iconColor: Colors.red,
-                          onTap: () {
-                            // Navigate to schedule
-                          },
-                        ),
-                      ],
-                    ),
-                    0.4,
-                  ),
-
-                  const SizedBox(height: 30),
-
-                  // This Week Section
-                  _buildAnimatedNotification(
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(15),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha:0.1),
-                                blurRadius: 4,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: const Text(
-                            'Minggu Ini',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF8B4513),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        _buildNotificationItem(
-                          icon: Icons.verified,
-                          title: 'Akun Terverifikasi',
-                          message: 'Selamat! Akun Anda telah berhasil diverifikasi dan siap menerima order.',
-                          time: '3 hari yang lalu',
-                          isRead: true,
-                          iconColor: Colors.blue.shade600,
-                          onTap: () {
-                            // Navigate to profile verification
-                          },
-                        ),
-
-                        _buildNotificationItem(
-                          icon: Icons.update,
-                          title: 'Update Aplikasi',
-                          message: 'Rampungin.id versi 2.1 tersedia! Update untuk mendapat fitur terbaru.',
-                          time: '5 hari yang lalu',
-                          isRead: true,
-                          iconColor: Colors.indigo,
-                          onTap: () {
-                            // Navigate to app update
-                          },
-                        ),
-                      ],
-                    ),
-                    0.6,
-                  ),
-
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
           ),
         ],
       ),
